@@ -1,0 +1,19 @@
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Terminal session logs (typescript files produced by `script`)
+typescript
+*.typescript
+
+# Editor and OS noise
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Local virtualenvs
+venv/
+.venv/

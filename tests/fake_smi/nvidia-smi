@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+"""Stub nvidia-smi for offline tests of nvtemp.py.
+
+Emits fixed CSV answers for the query shapes nvtemp uses. Values are read from
+env vars so a test can ask for e.g. low temperatures:
+  FAKE_GPUS     number of cards (default 1)
+  FAKE_TEMP     GPU core temperature for every card (default 30)
+  FAKE_MEM      GPU memory temperature for every card (default 36)
+  FAKE_SLOW     slowdown threshold reported by the driver (default 90)
+  FAKE_UTIL     GPU core load in percent (default 45)
+  FAKE_USED     VRAM used in MiB (default 12288)
+  FAKE_TOTAL    VRAM total in MiB (default 24576)
+  FAKE_NO_EXTRA when set to 1, the extra fields are rejected the way an old
+                driver would, so nvtemp's fallback query can be exercised
+"""
+import os
+import sys
+
+gpus = int(os.environ.get("FAKE_GPUS", "1"))
+temp = os.environ.get("FAKE_TEMP", "30")
+mem = os.environ.get("FAKE_MEM", "36")
+slow = os.environ.get("FAKE_SLOW", "90")
+util = os.environ.get("FAKE_UTIL", "45")
+used = os.environ.get("FAKE_USED", "12288")
+total = os.environ.get("FAKE_TOTAL", "24576")
+no_extra = os.environ.get("FAKE_NO_EXTRA") == "1"
+
+query = ""
+for arg in sys.argv[1:]:
+    if arg.startswith("--query-gpu="):
+        query = arg.split("=", 1)[1]
+
+fields = query.split(",")
+if fields == ["index", "name"]:
+    for i in range(gpus):
+        print(f"{i}, Fake GPU {i}")
+elif fields == ["index", "temperature.gpu", "temperature.slow_threshold"]:
+    for i in range(gpus):
+        print(f"{i}, {temp}, {slow}")
+elif fields == ["index", "temperature.gpu", "temperature.memory"]:
+    for i in range(gpus):
+        print(f"{i}, {temp}, {mem}")
+elif fields == ["index", "temperature.gpu", "temperature.memory",
+                "utilization.gpu", "memory.used", "memory.total"]:
+    if no_extra:
+        sys.stderr.write('Field "utilization.gpu" is not a valid field\n')
+        sys.exit(2)
+    for i in range(gpus):
+        print(f"{i}, {temp}, {mem}, {util}, {used}, {total}")
+else:
+    sys.stderr.write(f"fake nvidia-smi: unsupported query {query!r}\n")
+    sys.exit(1)
